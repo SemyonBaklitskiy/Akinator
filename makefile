@@ -1,17 +1,20 @@
 .PHONY: clean compile
 
-all: bin/functions.o bin/main.o
-	g++ -Wall -Wextra bin/functions.o bin/main.o -o bin/start
+all: bin/akinator_functions.o bin/main.o bin/stack.o
+	g++ -Wall -Wextra bin/akinator_functions.o bin/main.o bin/stack.o -o bin/start
 	bin/./start base.txt
 
-bin/functions.o: src/functions.cpp includes/functions.h
-	g++ -Wall -Wextra -Iincludes/ -c src/functions.cpp -o bin/functions.o
+bin/akinator_functions.o: src/akinator_functions.cpp includes/akinator_functions.h
+	g++ -Wall -Wextra -Iincludes/ -c src/akinator_functions.cpp -o bin/akinator_functions.o
 
 bin/main.o: src/main.cpp
 	g++ -Wall -Wextra -Iincludes/ -c src/main.cpp -o bin/main.o
 
-clean:
-	rm bin/main.o bin/functions.o bin/start
+bin/stack.o: src/stack_functions.cpp includes/stack_functions.h 
+	g++ -Wall -Wextra -Iincludes/ -c src/stack_functions.cpp -o bin/stack.o
 
-compile: bin/functions.o bin/main.o
-	g++ -Wall -Wextra bin/functions.o bin/main.o -o bin/start
+clean:
+	rm bin/main.o bin/akinator_functions.o bin/stack.o bin/start
+
+compile: bin/akinator_functions.o bin/main.o bin/stack.o
+	g++ -Wall -Wextra bin/akinator_functions.o bin/main.o bin/stack.o -o bin/start

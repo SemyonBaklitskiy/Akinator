@@ -1,4 +1,4 @@
-#include "functions.h"
+#include "akinator_functions.h"
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -12,5 +12,10 @@ int main(int argc, char* argv[]) {
     if (tree == NULL) 
         return -1;
 
-    return start_game(tree, filePath);
+    //return start_game(tree, filePath);
+
+    char searchingData[50] = " ";
+    printf("Enter data to search: ");
+    scanf("%s", searchingData);
+    return definition_mode(tree, searchingData);
 }

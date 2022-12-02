@@ -1,1 +1,1 @@
-(Is it a human?(Is it Semyon?()(Is it Danya?))(Is it a cat?(Poltorashka?)()))
+(Human?(Semyon?()(Danya?))(Cat?(Poltorashka?)()))
