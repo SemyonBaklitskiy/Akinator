@@ -1,9 +1,13 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include "akinator_functions.h"
 #include "akinator_enums.h"
+
+#ifdef DEFINITION
 #include "stack_functions.h"
+#endif
 
 #define PRINT_ERROR(error) processor_of_errors(error, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define CHECK_NULLPTR(pointer, error, ...) if (pointer == NULL) { PRINT_ERROR(error); __VA_ARGS__; }
@@ -11,8 +15,6 @@
 static const int capacityOfStacks = 4;
 
 static void processor_of_errors(akinatorErrors error, const char* fileName, const char* functionName, const int line);
-static size_t size_of_word(FILE* stream);
-static char* get_word(FILE* stream);
 static struct Node* built_tree(FILE* stream);
 static void clean_stdinput();
 static struct Node* add_node();
@@ -20,9 +22,12 @@ static int add_info(struct Node* node);
 static int play(struct Node* node);
 static void print_tree(struct Node* node, FILE* stream);
 static void free_tree(struct Node* node);
+
+#ifdef DEFINITION
 static void remove_question_mark(char* str);
 static void output_in_definition_mode(const struct stack* st, const struct stack* sideSt);
 static int search(const struct Node* node, const char* searchingData, struct stack* st, struct stack* sideSt);
+#endif
 
 int start_game(struct Node* tree, const char* filePath) {
     CHECK_NULLPTR(tree, NULLPTR_GIVEN, return -1);
@@ -75,12 +80,14 @@ struct Node* get_tree(const char* filePath) {
     return tree;
 }
 
+#ifdef DEFINITION
+
 int definition_mode(struct Node* tree, const char* searchingData) {
     CHECK_NULLPTR(tree, NULLPTR_GIVEN, return -1);
     CHECK_NULLPTR(searchingData, NULLPTR_GIVEN, return -1);
 
     struct stack* st = (struct stack*)calloc(1, sizeof(stack));
-    struct stack* sideSt = (struct stack*)calloc(1, sizeof(stack)); //mb rename
+    struct stack* sideSt = (struct stack*)calloc(1, sizeof(stack)); 
     CHECK_NULLPTR(st, NULL_RETURNED, return -1);
     CHECK_NULLPTR(sideSt, NULL_RETURNED, return -1);
 
@@ -133,6 +140,8 @@ int definition_mode(struct Node* tree, const char* searchingData) {
     }
 }
 
+#endif
+
 static int play(struct Node* node) {
     printf("%s (Y/N): ", node->data);
     char answer = 0;
@@ -183,41 +192,6 @@ static void processor_of_errors(akinatorErrors error, const char* fileName, cons
     }
 }
 
-static size_t size_of_word(FILE* stream) {
-    size_t size = 0;
-    int symbol = getc(stream);
-
-    while ((symbol != ')') && (symbol != '(') && (symbol != EOF)) {
-        ++size;
-        symbol = getc(stream);
-    }
-
-    fseek(stream, -size - 1, SEEK_CUR);
-    return size;
-}
-
-static char* get_word(FILE* stream) {
-    size_t size = size_of_word(stream); 
-    char* word = (char*)calloc(size + 1, sizeof(char));
-
-    CHECK_NULLPTR(word, NULL_RETURNED, return NULL);
-
-    int symbol = getc(stream);
-    int wordIndex = 0;
-
-    while ((symbol != ')') && (symbol != '(') && (symbol != EOF)) {
-        word[wordIndex] = symbol;
-        ++wordIndex;
-
-        symbol = getc(stream);
-    }
-
-    word[wordIndex] = '\0';
-
-    ungetc(symbol, stream);
-    return word;
-}
-
 static struct Node* built_tree(FILE* stream) {
     int c = getc(stream); 
     
@@ -226,10 +200,10 @@ static struct Node* built_tree(FILE* stream) {
 
         CHECK_NULLPTR(node, NULL_RETURNED, PRINT_ERROR(BUILT_TREE_ERROR), assert(0));
 
-        char* data = get_word(stream);
-        CHECK_NULLPTR(data, BUILT_TREE_ERROR, assert(0));
+        char* data = NULL;
+        fscanf(stream, "%m[^()]s", &data);
 
-        if (data[0] == '\0') {
+        if (data == NULL) {
             free(data);
             free(node);
             node = NULL;
@@ -274,17 +248,9 @@ static struct Node* add_node() {
     CHECK_NULLPTR(node, NULL_RETURNED, return NULL);
 
     char* data = NULL;
-
     printf("Add data here: ");
-    size_t size = 0;
-    int realSize = getline(&data, &size, stdin);
-
-    if (realSize == -1) {
-        PRINT_ERROR(GETLINE_ERROR);
-        return NULL;
-    }
-
-    data[realSize - 1] = '\0';
+    scanf("%m[^\n]s", &data);
+    clean_stdinput();
 
     node->data = data;
     node->left = NULL;
@@ -343,7 +309,9 @@ static void free_tree(struct Node* node) {
     return;
 }
 
-static int search(const struct Node* node, const char* searchingData, struct stack* st, struct stack* sideSt) {
+#ifdef DEFINITION
+
+static int search(const struct Node* node, const char* searchingData, struct stack* st, struct stack* sideSt) { //TODO think about optimisation
     int result = NOT_FOUND;
     char* tmp = NULL;
     push(st, node->data);
@@ -371,7 +339,7 @@ static int search(const struct Node* node, const char* searchingData, struct sta
     }
 
     if (result == NOT_FOUND) {
-        stack_pop(st, &tmp);  //think about optimisation
+        stack_pop(st, &tmp); 
         stack_pop(sideSt, &tmp);
     }
 
@@ -408,3 +376,5 @@ static void output_in_definition_mode(const struct stack* st, const struct stack
 
     printf("\n");
 }
+
+#endif

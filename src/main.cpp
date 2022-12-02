@@ -1,7 +1,8 @@
+#include <stdio.h>
 #include "akinator_functions.h"
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
+    if (argc < 2) {
         printf("Wrong amount of arguments\n");
         return -1;
     }
@@ -12,10 +13,13 @@ int main(int argc, char* argv[]) {
     if (tree == NULL) 
         return -1;
 
-    //return start_game(tree, filePath);
+#ifndef DEFINITION
+    printf("GAME MODE:\n");
+    return start_game(tree, filePath);
 
-    char searchingData[50] = " ";
-    printf("Enter data to search: ");
-    scanf("%s", searchingData);
+#else 
+    const char* searchingData = argv[2];
+    printf("DEFINITION MODE:\n");
     return definition_mode(tree, searchingData);
+#endif
 }

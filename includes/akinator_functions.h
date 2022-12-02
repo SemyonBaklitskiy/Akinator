@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 struct Node {
     char* data;
     struct Node* left;
