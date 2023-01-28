@@ -12,8 +12,3 @@ enum returnPlayCode {
     ADD_DATA       = 1,
     DONT_ADD_DATA  = 2,
 };
-
-enum searchCode {
-    FOUND = 0,
-    NOT_FOUND = 1,
-};

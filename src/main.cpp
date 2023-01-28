@@ -13,13 +13,16 @@ int main(int argc, char* argv[]) {
     if (tree == NULL) 
         return -1;
 
-#ifndef DEFINITION
+#ifdef GAME
+
     printf("GAME MODE:\n");
     return start_game(tree, filePath);
 
-#else 
+#elif defined DEFINITION
+
     const char* searchingData = argv[2];
     printf("DEFINITION MODE:\n");
     return definition_mode(tree, searchingData);
+    
 #endif
 }

@@ -1,1 +1,1 @@
-(Human?(Semyon?()(Danya?()()))(Cat?(Poltorashka?()())(Dog?(Tusic?)())))
+(Human(Semyon()(Danya()(Sasha()())))(Cat(Poltorashka()())(Dog(Tusic()())(Parrot(Popka()(Pupa()()))()))))
