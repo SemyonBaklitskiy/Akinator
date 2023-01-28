@@ -13,9 +13,6 @@ bin/main.o: src/main.cpp
 bin/stack.o: src/stack_functions.cpp includes/stack_functions.h 
 	g++ -Wall -Wextra -Iincludes/ -c src/stack_functions.cpp -o bin/stack.o
 
-clean:
-	rm bin/main.o bin/akinator_functions.o bin/start
-
 compile: bin/akinator_functions.o bin/main.o bin/stack.o
 	g++ -Wall -Wextra bin/akinator_functions.o bin/main.o bin/stack.o -o bin/start
 
@@ -25,8 +22,23 @@ bin/def_akinator_functions.o: src/akinator_functions.cpp includes/akinator_funct
 bin/def_main.o: src/main.cpp
 	g++ -Wall -Wextra -Iincludes/ -D DEFINITION -c src/main.cpp -o bin/def_main.o
 
+bin/comp_akinator_functions.o: src/akinator_functions.cpp includes/akinator_functions.h
+	g++ -Wall -Wextra -Iincludes/ -D COMPARISON -c src/akinator_functions.cpp -o bin/comp_akinator_functions.o
+
+bin/comp_main.o: src/main.cpp
+	g++ -Wall -Wextra -Iincludes/ -D COMPARISON -c src/main.cpp -o bin/comp_main.o
+
 definition_mode: bin/def_main.o bin/def_akinator_functions.o bin/stack.o
 	g++ -Wall -Wextra bin/def_main.o bin/def_akinator_functions.o bin/stack.o -o bin/def
 
+comparison_mode: bin/comp_main.o bin/comp_akinator_functions.o bin/stack.o
+	g++ -Wall -Wextra bin/comp_main.o bin/comp_akinator_functions.o bin/stack.o -o bin/comp
+
+clean:
+	rm bin/main.o bin/akinator_functions.o bin/start
+
 clean_def:
 	rm bin/def_main.o bin/def_akinator_functions.o bin/stack.o bin/def
+
+clean_comp:
+	rm bin/comp_main.o bin/comp_akinator_functions.o bin/stack.o bin/comp

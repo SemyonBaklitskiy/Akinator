@@ -5,9 +5,13 @@
 #include "akinator_functions.h"
 #include "akinator_enums.h"
 
-#ifdef DEFINITION
+#if defined DEFINITION || defined COMPARISON
+
 #include "stack_functions.h"
 static const int capacityOfStack = 4;
+static int search(const struct Node* node, const char* searchingData, struct stack* st, int* depth);
+static int free_memory(struct stack* st, struct Node* tree, const int returnCode);
+
 #endif
 
 #define PRINT_ERROR(error) processor_of_errors(error, __FILE__, __PRETTY_FUNCTION__, __LINE__)
@@ -18,6 +22,7 @@ static struct Node* built_tree(FILE* stream);
 static void free_tree(struct Node* node);
 
 #ifdef GAME
+
 static void clean_stdinput();
 static struct Node* add_node();
 static int add_info(struct Node* node);
@@ -25,9 +30,13 @@ static int play(struct Node* node);
 static void print_tree(struct Node* node, FILE* stream);
 
 #elif defined DEFINITION
-static int free_memory(struct stack* st, struct Node* tree, const int returnCode);
+
 static void output_in_definition_mode(const struct stack* st);
-static int search(const struct Node* node, const char* searchingData, struct stack* st, int* depth);
+
+#else 
+
+static void output_in_comparison_mode(const struct stack* firstSt, const struct stack* secondSt);
+
 #endif
 
 struct Node* get_tree(const char* filePath) {
@@ -45,7 +54,7 @@ struct Node* get_tree(const char* filePath) {
 static void processor_of_errors(akinatorErrors error, const char* fileName, const char* functionName, const int line) { 
     switch (error) {
         case NULLPTR_GIVEN:
-            printf("In file %s in function %s on line %d: NULL was given as argument\n", fileName, functionName, line);
+            printf("In file %s in function %s on line %d: NULL was given as an argument\n", fileName, functionName, line);
             break;
 
         case FILE_DONT_EXIST:
@@ -58,10 +67,6 @@ static void processor_of_errors(akinatorErrors error, const char* fileName, cons
 
         case NULL_RETURNED:
             printf("In file %s in function %s on line %d: calloc returned NULL can`t give memory\n", fileName, functionName, line);
-            break;
-
-        case GETLINE_ERROR:
-            printf("In file %s in function %s on line %d: input error (getline returned -1)\n", fileName, functionName, line);
             break;
 
         default:
@@ -131,7 +136,7 @@ static void free_tree(struct Node* node) {
 
 int start_game(struct Node* tree, const char* filePath) {
     CHECK_NULLPTR(tree, NULLPTR_GIVEN, return -1);
-    CHECK_NULLPTR(filePath, NULLPTR_GIVEN, return -1);
+    CHECK_NULLPTR(filePath, NULLPTR_GIVEN, free_tree(tree); return -1);
 
     int result = play(tree);
 
@@ -254,7 +259,7 @@ static void print_tree(struct Node* node, FILE* stream) {
 
 int definition_mode(struct Node* tree, const char* searchingData) {
     CHECK_NULLPTR(tree, NULLPTR_GIVEN, return -1);
-    CHECK_NULLPTR(searchingData, NULLPTR_GIVEN, return -1);
+    CHECK_NULLPTR(searchingData, NULLPTR_GIVEN, free_tree(tree); return -1);
 
     struct stack* st = (struct stack*)calloc(1, sizeof(stack));
     CHECK_NULLPTR(st, NULL_RETURNED, return -1);
@@ -274,18 +279,108 @@ int definition_mode(struct Node* tree, const char* searchingData) {
         }    
 
         case false:
+        {
             printf("No result found\n");
 
             return free_memory(st, tree, 0);
             break;
+        }
 
         default:  
+        {
             printf("Some error happened\n");
 
             return free_memory(st, tree, -1);
             break;
+        }
     }
 }
+
+static void output_in_definition_mode(const struct stack* st) {
+    printf("%s:\n", st->buffer[st -> size - 1]);
+
+    for (unsigned int stackIndex = 0; stackIndex + 1 < st -> size - 1; stackIndex += 2) 
+        printf("%s %s ", st->buffer[stackIndex], st->buffer[stackIndex + 1]);
+
+    printf("\n");
+}
+
+#else 
+
+int comparison_mode(struct Node* tree, const char* firstObject, const char* secondObject) {
+    CHECK_NULLPTR(tree, NULLPTR_GIVEN, return -1);
+    CHECK_NULLPTR(firstObject, NULLPTR_GIVEN, free_tree(tree); return -1);
+    CHECK_NULLPTR(secondObject, NULLPTR_GIVEN, free_tree(tree); return -1);
+
+    struct stack* firstSt = (struct stack*)calloc(1, sizeof(stack));
+    CHECK_NULLPTR(firstSt, NULL_RETURNED, return -1);
+
+    struct stack* secondSt = (struct stack*)calloc(1, sizeof(stack));
+    CHECK_NULLPTR(secondSt, NULL_RETURNED, return -1);
+
+    stack_ctor(firstSt, capacityOfStack);
+    stack_ctor(secondSt, capacityOfStack);
+
+    int depth = 0;
+    int firstResult = search(tree, firstObject, firstSt, &depth);
+
+    depth = 0;
+    int secondResult = search(tree, secondObject, secondSt, &depth);
+
+    if (firstResult && secondResult) {
+        output_in_comparison_mode(firstSt, secondSt);
+        free_memory(firstSt, tree, 0);
+        tree = NULL;
+        return free_memory(secondSt, tree, 0);
+
+    } else if (!(firstResult || secondResult)) {
+        printf("No result found for both objects: %s %s\n", firstObject, secondObject);
+        free_memory(secondSt, tree, 0);
+        tree = NULL;
+        return free_memory(firstSt, tree, 0);
+
+    } else if (!firstObject) {
+        printf("No result found for first object: %s\n", firstObject);
+        free_memory(secondSt, tree, 0);
+        tree = NULL;
+        return free_memory(firstSt, tree, 0);
+
+    } else {
+        printf("No result found for second object: %s\n", secondObject);
+        free_memory(secondSt, tree, 0);
+        tree = NULL;
+        return free_memory(firstSt, tree, 0);
+    }
+
+    printf ("Some error happened\n");
+    free_memory(firstSt, tree, -1);
+    tree = NULL;
+    return free_memory(secondSt, tree, -1);
+}
+
+static void output_in_comparison_mode(const struct stack* firstSt, const struct stack* secondSt) {
+    printf("%s and %s:\n", firstSt->buffer[firstSt->size - 1], secondSt->buffer[secondSt->size - 1]);
+    printf("Common: ");
+
+    unsigned int stIndex = 0;
+    for (stIndex = 0; (stIndex < firstSt->size) && (stIndex < secondSt ->size) && (strcmp(firstSt->buffer[stIndex], secondSt->buffer[stIndex]) == 0); ++stIndex) 
+        printf("%s ", firstSt->buffer[stIndex]);
+    printf("\n");
+     
+    printf("But %s: ", firstSt->buffer[firstSt->size - 1]);
+    for (unsigned int firstStIndex = stIndex; firstStIndex < firstSt->size - 1; ++firstStIndex) 
+        printf("%s ", firstSt->buffer[firstStIndex]);
+    printf("\n");
+
+    printf("But %s: ", secondSt->buffer[secondSt->size - 1]);
+    for (unsigned int secondStIndex = stIndex; secondStIndex < secondSt->size - 1; ++secondStIndex) 
+        printf("%s ", secondSt->buffer[secondStIndex]);
+    printf("\n");
+}
+
+#endif
+
+#if defined DEFINITION || defined COMPARISON 
 
 static int search(const struct Node* node, const char* searchingData, struct stack* st, int* depth) { 
     ++(*depth);
@@ -330,15 +425,6 @@ static int search(const struct Node* node, const char* searchingData, struct sta
 
     --(*depth);
     return found;
-}
-
-static void output_in_definition_mode(const struct stack* st) {
-    printf("%s:\n", st->buffer[st -> size - 1]);
-
-    for (unsigned int stackIndex = 0; stackIndex + 1 < st -> size - 1; stackIndex += 2) 
-        printf("%s %s ", st->buffer[stackIndex], st->buffer[stackIndex + 1]);
-
-    printf("\n");
 }
 
 static int free_memory(struct stack* st, struct Node* tree, const int returnCode) {

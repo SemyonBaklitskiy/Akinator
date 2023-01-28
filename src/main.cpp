@@ -23,6 +23,14 @@ int main(int argc, char* argv[]) {
     const char* searchingData = argv[2];
     printf("DEFINITION MODE:\n");
     return definition_mode(tree, searchingData);
+
+#else 
+
+    const char* firstObject = argv[2];
+    const char* secondObject = argv[3];
+    printf("COMPARISON MODE:\n");
+    return comparison_mode(tree, firstObject, secondObject);
     
 #endif
+
 }
