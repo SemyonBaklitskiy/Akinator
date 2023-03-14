@@ -10,4 +10,5 @@ enum returnPlayCode {
     CORRECT_ANSWER = 0,
     ADD_DATA       = 1,
     DONT_ADD_DATA  = 2,
+    WRONG_COMMAND  = 3,
 };

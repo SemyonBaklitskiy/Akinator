@@ -1,18 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include "akinator_functions.h"
 #include "akinator_enums.h"
-
-#if defined DEFINITION || defined COMPARISON
-
 #include "stack_functions.h"
+
 static const int capacityOfStack = 4;
 static int search(const struct Node* node, const char* searchingData, struct stack* st, int* depth);
 static int free_memory(struct stack* st, struct Node* tree, const int returnCode);
-
-#endif
 
 #define PRINT_ERROR(error) processor_of_errors(error, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define CHECK_NULLPTR(pointer, error, ...) if (pointer == NULL) { PRINT_ERROR(error); __VA_ARGS__; }
@@ -21,23 +16,19 @@ static void processor_of_errors(akinatorErrors error, const char* fileName, cons
 static struct Node* built_tree(FILE* stream);
 static void free_tree(struct Node* node);
 
-#ifdef GAME
-
-static void clean_stdinput();
+static char* get_str();
 static struct Node* add_node();
 static int add_info(struct Node* node);
 static int play(struct Node* node);
 static void print_tree(struct Node* node, FILE* stream);
-
-#elif defined DEFINITION
-
-static void output_in_definition_mode(const struct stack* st);
-
-#else 
-
+static void output_in_definition_mode(const struct stack* st); 
 static void output_in_comparison_mode(const struct stack* firstSt, const struct stack* secondSt);
 
-#endif
+void clean_stdinput() {
+    int c = getchar();
+    while ((c != EOF) && (c != '\n') && (c != '\0')) 
+        c = getchar();
+}
 
 struct Node* get_tree(const char* filePath) {
     CHECK_NULLPTR(filePath, NULLPTR_GIVEN, return NULL);
@@ -80,7 +71,7 @@ static struct Node* built_tree(FILE* stream) {
     if (c == '(') {
         struct Node* node = (struct Node*)calloc(1, sizeof(Node));
 
-        CHECK_NULLPTR(node, NULL_RETURNED, PRINT_ERROR(BUILT_TREE_ERROR), assert(0));
+        CHECK_NULLPTR(node, NULL_RETURNED, PRINT_ERROR(BUILT_TREE_ERROR), exit(BUILT_TREE_ERROR));
 
         char* data = NULL;
         fscanf(stream, "%m[^()]s", &data);
@@ -114,7 +105,7 @@ static struct Node* built_tree(FILE* stream) {
 
     } else {
         PRINT_ERROR(BUILT_TREE_ERROR);
-        assert(0);
+        exit(BUILT_TREE_ERROR);
     }
 }
 
@@ -129,10 +120,9 @@ static void free_tree(struct Node* node) {
     free_tree(node->right);
 
     free(node);
+    node = NULL;
     return;
 }
-
-#ifdef GAME
 
 int start_game(struct Node* tree, const char* filePath) {
     CHECK_NULLPTR(tree, NULLPTR_GIVEN, return -1);
@@ -166,6 +156,12 @@ int start_game(struct Node* tree, const char* filePath) {
             return 0;
             break;
 
+        case WRONG_COMMAND:
+            free_tree(tree);
+            printf("Wrong command, game finished!\n");
+            return 0;
+            break;
+
         default:
             free_tree(tree);
             printf("Some error happened\n");
@@ -191,15 +187,11 @@ static int play(struct Node* node) {
     } else if (((answer == 'n') || (answer == 'N')) && (node->right == NULL)) {
         return add_info(node);
 
+    } else if ((answer != 'y') && (answer != 'Y') && (answer != 'n') && (answer != 'N')) {
+        return WRONG_COMMAND;
+
     } else {
         return -1;
-    }
-}
-
-static void clean_stdinput() {
-    int c = getchar();
-    while (c != EOF && c != '\n' && c != '\0') {
-        c = getchar();
     }
 }
 
@@ -255,11 +247,12 @@ static void print_tree(struct Node* node, FILE* stream) {
     return;
 }
 
-#elif defined DEFINITION
-
-int definition_mode(struct Node* tree, const char* searchingData) {
+int definition_mode(struct Node* tree) {
     CHECK_NULLPTR(tree, NULLPTR_GIVEN, return -1);
-    CHECK_NULLPTR(searchingData, NULLPTR_GIVEN, free_tree(tree); return -1);
+
+    printf("Please enter object to definite or press ENTER to quit: ");
+    char* searchingData = get_str();
+    CHECK_NULLPTR(searchingData, NOERRORS, free_tree(tree); return 0);
 
     struct stack* st = (struct stack*)calloc(1, sizeof(stack));
     CHECK_NULLPTR(st, NULL_RETURNED, return -1);
@@ -268,12 +261,14 @@ int definition_mode(struct Node* tree, const char* searchingData) {
 
     int depth = 0;
     int result = search(tree, searchingData, st, &depth);
+    clean_stdinput();
 
     switch (result) {
         case true: 
         {
             output_in_definition_mode(st);
         
+            free(searchingData);
             return free_memory(st, tree, 0);
             break;
         }    
@@ -282,6 +277,7 @@ int definition_mode(struct Node* tree, const char* searchingData) {
         {
             printf("No result found\n");
 
+            free(searchingData);
             return free_memory(st, tree, 0);
             break;
         }
@@ -290,6 +286,7 @@ int definition_mode(struct Node* tree, const char* searchingData) {
         {
             printf("Some error happened\n");
 
+            free(searchingData);
             return free_memory(st, tree, -1);
             break;
         }
@@ -305,12 +302,16 @@ static void output_in_definition_mode(const struct stack* st) {
     printf("\n");
 }
 
-#else 
-
-int comparison_mode(struct Node* tree, const char* firstObject, const char* secondObject) {
+int comparison_mode(struct Node* tree) {
     CHECK_NULLPTR(tree, NULLPTR_GIVEN, return -1);
-    CHECK_NULLPTR(firstObject, NULLPTR_GIVEN, free_tree(tree); return -1);
-    CHECK_NULLPTR(secondObject, NULLPTR_GIVEN, free_tree(tree); return -1);
+
+    printf("Please enter first object to compare or press ENTER to quit: ");
+    char* firstObject = get_str();
+    CHECK_NULLPTR(firstObject, NOERRORS, free_tree(tree); return 0);
+    clean_stdinput();
+    printf("Please enter second object to compare or press ENTER to quit: ");
+    char* secondObject = get_str();
+    CHECK_NULLPTR(secondObject, NOERRORS, free(firstObject); free_tree(tree); return 0);
 
     struct stack* firstSt = (struct stack*)calloc(1, sizeof(stack));
     CHECK_NULLPTR(firstSt, NULL_RETURNED, return -1);
@@ -329,32 +330,47 @@ int comparison_mode(struct Node* tree, const char* firstObject, const char* seco
 
     if (firstResult && secondResult) {
         output_in_comparison_mode(firstSt, secondSt);
+
         free_memory(firstSt, tree, 0);
         tree = NULL;
+        free(secondObject);
+        free(firstObject);
         return free_memory(secondSt, tree, 0);
 
     } else if (!(firstResult || secondResult)) {
         printf("No result found for both objects: %s %s\n", firstObject, secondObject);
+
         free_memory(secondSt, tree, 0);
         tree = NULL;
+        free(secondObject);
+        free(firstObject);
         return free_memory(firstSt, tree, 0);
 
-    } else if (!firstObject) {
+    } else if (!firstResult) {
         printf("No result found for first object: %s\n", firstObject);
+
         free_memory(secondSt, tree, 0);
         tree = NULL;
+        free(secondObject);
+        free(firstObject);
         return free_memory(firstSt, tree, 0);
 
     } else {
         printf("No result found for second object: %s\n", secondObject);
+
         free_memory(secondSt, tree, 0);
         tree = NULL;
+        free(secondObject);
+        free(firstObject);
         return free_memory(firstSt, tree, 0);
     }
 
     printf ("Some error happened\n");
+
     free_memory(firstSt, tree, -1);
     tree = NULL;
+    free(secondObject);
+    free(firstObject);
     return free_memory(secondSt, tree, -1);
 }
 
@@ -377,10 +393,6 @@ static void output_in_comparison_mode(const struct stack* firstSt, const struct 
         printf("%s ", secondSt->buffer[secondStIndex]);
     printf("\n");
 }
-
-#endif
-
-#if defined DEFINITION || defined COMPARISON 
 
 static int search(const struct Node* node, const char* searchingData, struct stack* st, int* depth) { 
     ++(*depth);
@@ -435,4 +447,75 @@ static int free_memory(struct stack* st, struct Node* tree, const int returnCode
     return returnCode;
 }
 
+static char* get_str() {
+    char* str = NULL;
+    scanf("%m[^\n]s", &str);
+
+    if (str == NULL)
+        return NULL;
+
+    return str;
+}
+
+#ifdef DUMP
+static const char dumpFilePath[] = "tree.gv";
+static const char nullName[] = "NULL";
+
+static void make_labels(const struct Node* node, FILE* stream, int* counter);
+static void make_edges(const struct Node* node, FILE* stream, bool* secondCall, int* counter);
+
+void dump(struct Node* tree) {
+    CHECK_NULLPTR(tree, NULLPTR_GIVEN, return);
+    
+    FILE* stream = fopen(dumpFilePath, "w");
+    CHECK_NULLPTR(stream, FILE_DONT_EXIST, return);
+
+    fprintf(stream, "digraph Tree {\n");
+    int counter = 0;
+    make_labels(tree, stream, &counter);
+    counter = 0;
+    bool secondCall = false;
+    make_edges(tree, stream, &secondCall, &counter);
+    fprintf(stream, "}");
+
+    fclose(stream);
+    free_tree(tree);
+}
+
+static void make_labels(const struct Node* node, FILE* stream, int* counter) {
+    if (node == NULL) {
+        return;
+    }
+
+    fprintf(stream, "\"%p\" [label = %s];\n", node, node->data);
+
+    if (node->left == NULL) 
+        fprintf(stream, "\"%s%d\" [label = \"Win\"];\n", nullName, ++(*counter));
+
+    if (node->right == NULL)
+        fprintf(stream, "\"%s%d\" [label = \"No data\"];\n", nullName, ++(*counter));
+
+    make_labels(node->left, stream, counter);
+    make_labels(node->right, stream, counter);
+}
+
+static void make_edges(const struct Node* node, FILE* stream, bool* secondCall, int* counter) {
+    if (node == NULL) {
+        fprintf(stream, "\"%s%d\";\n", nullName, ++(*counter));
+        return;
+    }
+
+    fprintf(stream, "\"%p\" -> ", node);
+
+    if (*secondCall)
+        return;
+
+    make_edges(node->left, stream, secondCall, counter);
+
+    *secondCall = true;
+    make_edges(node, stream, secondCall, counter);
+    *secondCall = false;
+
+    make_edges(node->right, stream, secondCall, counter);
+}
 #endif

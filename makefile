@@ -1,44 +1,38 @@
-.PHONY: clean clean_def compile definition_mode
+.PHONY: all dump clean clean_dump
 
-all: bin/akinator_functions.o bin/main.o
-	g++ -Wall -Wextra bin/akinator_functions.o bin/main.o -o bin/start
+all: bin/start
 	bin/./start base.txt
 
-bin/akinator_functions.o: src/akinator_functions.cpp includes/akinator_functions.h
-	g++ -Wall -Wextra -Iincludes/ -D GAME -c src/akinator_functions.cpp -o bin/akinator_functions.o
+dump: bin/start_dump
+	bin/./start_dump base.txt
+	dot -Tpng tree.gv -o tree.png
 
-bin/main.o: src/main.cpp
-	g++ -Wall -Wextra -Iincludes/ -D GAME -c src/main.cpp -o bin/main.o
-
-bin/stack.o: src/stack_functions.cpp includes/stack_functions.h 
-	g++ -Wall -Wextra -Iincludes/ -c src/stack_functions.cpp -o bin/stack.o
-
-compile: bin/akinator_functions.o bin/main.o bin/stack.o
+bin/start: bin/akinator_functions.o bin/main.o bin/stack.o
 	g++ -Wall -Wextra bin/akinator_functions.o bin/main.o bin/stack.o -o bin/start
 
-bin/def_akinator_functions.o: src/akinator_functions.cpp includes/akinator_functions.h
-	g++ -Wall -Wextra -Iincludes/ -D DEFINITION -c src/akinator_functions.cpp -o bin/def_akinator_functions.o
+bin/start_dump: bin/akinator_functions_dump.o bin/main_dump.o bin/stack.o
+	g++ -Wall -Wextra bin/akinator_functions_dump.o bin/main_dump.o bin/stack.o -o bin/start_dump
 
-bin/def_main.o: src/main.cpp
-	g++ -Wall -Wextra -Iincludes/ -D DEFINITION -c src/main.cpp -o bin/def_main.o
+bin/akinator_functions.o: src/akinator_functions.cpp includes/akinator_functions.h
+	if [ ! -d bin ]; then mkdir bin; fi
+	g++ -Wall -Wextra -I includes/ -c src/akinator_functions.cpp -o bin/akinator_functions.o
 
-bin/comp_akinator_functions.o: src/akinator_functions.cpp includes/akinator_functions.h
-	g++ -Wall -Wextra -Iincludes/ -D COMPARISON -c src/akinator_functions.cpp -o bin/comp_akinator_functions.o
+bin/akinator_functions_dump.o: src/akinator_functions.cpp includes/akinator_functions.h
+	if [ ! -d bin ]; then mkdir bin; fi
+	g++ -Wall -Wextra -I includes/ -D DUMP -c src/akinator_functions.cpp -o bin/akinator_functions_dump.o
 
-bin/comp_main.o: src/main.cpp
-	g++ -Wall -Wextra -Iincludes/ -D COMPARISON -c src/main.cpp -o bin/comp_main.o
+bin/main.o: src/main.cpp
+	g++ -Wall -Wextra -I includes/ -c src/main.cpp -o bin/main.o
 
-definition_mode: bin/def_main.o bin/def_akinator_functions.o bin/stack.o
-	g++ -Wall -Wextra bin/def_main.o bin/def_akinator_functions.o bin/stack.o -o bin/def
+bin/main_dump.o: src/main.cpp
+	g++ -Wall -Wextra -I includes/ -D DUMP -c src/main.cpp -o bin/main_dump.o
 
-comparison_mode: bin/comp_main.o bin/comp_akinator_functions.o bin/stack.o
-	g++ -Wall -Wextra bin/comp_main.o bin/comp_akinator_functions.o bin/stack.o -o bin/comp
+bin/stack.o: src/stack_functions.cpp includes/stack_functions.h 
+	g++ -Wall -Wextra -I includes/ -c src/stack_functions.cpp -o bin/stack.o
 
-clean:
-	rm bin/main.o bin/akinator_functions.o bin/start
+clean: 
+	rm -r bin/
 
-clean_def:
-	rm bin/def_main.o bin/def_akinator_functions.o bin/stack.o bin/def
+clean_dump: clean
+	rm tree.gv tree.png
 
-clean_comp:
-	rm bin/comp_main.o bin/comp_akinator_functions.o bin/stack.o bin/comp
